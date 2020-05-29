@@ -10,26 +10,20 @@ public:
 	using value_type = T;
 
 	my_btree_node(bool leaf);
-	~my_btree_node();
+	~my_btree_node() = default;
 
 	bool leaf() const noexcept;
-	
 	bool full() const noexcept;
 	bool sufficientKeyCount() const noexcept;
 
 	size_t keyCount() const noexcept;
 	size_t childCount() const noexcept;
-
 	size_t count(const T& key) const;
 
-	void clear() noexcept;
-
-	void print(int deepness) const noexcept;
-	my_btree_node* search(const T& key) const noexcept;
-
 	void insert(const T& key);
-	void remove(const T& key);
 
+	void remove(const T& key);
+	void clear() noexcept;
 
 private:
 	int findKey(const T& key) const;
@@ -49,15 +43,17 @@ private:
 
 	void placeChild(my_btree_node* node, int idx);
 
-	int _leaf;
-	int _key_count;
+	void print(int deepness) const noexcept;
+	my_btree_node* search(const T& key) const noexcept;
 
-public: //zatim...
+	bool _leaf;
+	size_t _key_count;
 
 	my_btree_node<T, Compare, min_degree>* _children[2 * min_degree];
+	value_type _keys[2* min_degree - 1];
+
 	my_btree_node<T, Compare, min_degree>* parent;
 	size_t my_child_index;
-	value_type _keys[2* min_degree - 1];
 
 	Compare _compare;
 };
@@ -69,12 +65,6 @@ inline my_btree_node <T, Compare, min_degree> ::my_btree_node(bool leaf)
 	my_child_index(0)
 {
 	parent = nullptr;
-}
-
-template<class T, class Compare, int min_degree>
-inline my_btree_node<T, Compare, min_degree>::~my_btree_node()
-{
-
 }
 
 template<class T, class Compare, int min_degree>
@@ -141,7 +131,7 @@ inline void my_btree_node<T, Compare, min_degree>::clear() noexcept
 template<class T, class Compare, int min_degree>
 inline void my_btree_node<T, Compare, min_degree>::print(int deepness) const noexcept
 {
-	std::string indentation(deepness * 2, ' ');
+	std::string indentation(2 * deepness, ' ');
 
 	if (leaf()) {
 		std::cout << indentation;
@@ -350,7 +340,7 @@ inline void my_btree_node<T, Compare, min_degree>::borrowFromPrev(int idx)
 	}
 	if (!child->leaf()) {
 		for (int i = child->keyCount(); i >= 0; --i) {
-			child->placeChild(child->_children[i], i+1);
+			child->placeChild(child->_children[i], i + 1);
 		}
 	}
 	child->_keys[0] = _keys[idx - 1];
@@ -401,8 +391,7 @@ inline void my_btree_node<T, Compare, min_degree>::merge(int idx)
 		child->_keys[i + min_degree] = sibling->_keys[i];
 	}
 
-	if (!child->leaf())
-	{
+	if (!child->leaf()) {
 		for (int i = 0; i <= sibling->keyCount(); ++i) {
 			child->placeChild(sibling->_children[i], i + min_degree);
 		}
