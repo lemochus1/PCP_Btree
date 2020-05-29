@@ -14,50 +14,122 @@
 template<class T, class Compare = std::less<T>, int MIN_DEGREE = 3 >
 class my_btree {
 
-	template<bool is_const>
+	template<bool is_const, bool reversed=false>
 	class iterator_impl;
 
 public:
-	using const_iterator = iterator_impl<false>;
 	using iterator = iterator_impl<true>;
-
+	using const_iterator = iterator_impl<false>;
+	
+	using reverse_iterator = iterator_impl<true, true>;
+	using const_reverse_iterator = iterator_impl<false, true>;
+	
 	my_btree();
+	my_btree(my_btree& other);
+	my_btree(my_btree&& other);
 	~my_btree();
 
 	[[nodiscard]] bool empty() const noexcept;
-	size_t size() const noexcept;
-
-	void clear() noexcept;
-	void erase(const T& key);
-
-	size_t count(const T& key) const;
-
-	bool contains(const T& key) const;
-	
-	void print() const noexcept;
+	[[nodiscard]] size_t size() const noexcept;
 
 	void insert(const T& key);
 	void remove(const T& key);
 
+	void erase(const T& key);
+	void clear() noexcept;
 
-	const_iterator begin()
+	[[nodiscard]] size_t count(const T& key) const;
+
+	[[nodiscard]] bool contains(const T& key) const;
+	
+	void print() const noexcept;
+
+
+
+	iterator begin() noexcept
+	{
+		return iterator(findBegin(), 0);
+	}
+
+	iterator end() noexcept
+	{
+		return iterator();
+	}
+
+	const_iterator cbegin() const noexcept
 	{
 		return const_iterator(findBegin(), 0);
 	}
 
-	const_iterator end()
+	const_iterator cend() const noexcept 
 	{
 		return const_iterator();
+	}
+
+	const_iterator begin() const noexcept
+	{
+		return const_iterator(findBegin(), 0);
+	}
+
+	const_iterator end() const noexcept
+	{
+		return const_iterator();
+	}
+
+	reverse_iterator rbegin() noexcept
+	{
+		auto last_node = findEnd();
+		size_t last_index = 0;
+		if (last_node) {
+			last_index = last_node->keyCount() - 1;
+		}
+		return reverse_iterator(last_node, last_index);
+	}
+
+	reverse_iterator rend() noexcept
+	{
+		return reverse_iterator();
+	}
+
+	const_reverse_iterator rbegin() const noexcept
+	{
+		auto last_node = findEnd();
+		size_t last_index = 0;
+		if (last_node) {
+			last_index = last_node->keyCount() - 1;
+		}
+		return const_reverse_iterator(last_node, last_index);
+	}
+
+	const_reverse_iterator rend() const noexcept
+	{
+		return const_reverse_iterator();
+	}
+
+	const_reverse_iterator crbegin() const noexcept
+	{
+		auto last_node = findEnd();
+		size_t last_index = 0;
+		if (last_node) {
+			last_index = last_node->keyCount() - 1;
+		}
+		return const_reverse_iterator(last_node, last_index);
+	}
+
+	const_reverse_iterator crend() const noexcept
+	{
+		return const_reverse_iterator();
 	}
 
 private:
 	my_btree_node<T, Compare, MIN_DEGREE>* _root;
 
 	size_t _size;
-	Compare _compare;//mel by byt static...
+	Compare _compare;//mel by byt static... pak v map z toho udelat nested...
 
 
 	my_btree_node<T, Compare, MIN_DEGREE>* findBegin();
+	my_btree_node<T, Compare, MIN_DEGREE>* findEnd();
 	
 };
 
@@ -71,6 +143,20 @@ my_btree_node<T, Compare, MIN_DEGREE>* my_btree<T, Compare, MIN_DEGREE>::findBeg
 	auto current_node = _root;
 	while (!current_node->leaf()) {
 		current_node = current_node->_children[0];
+	}
+	return current_node;
+}
+
+template<class T, class Compare, int MIN_DEGREE>
+inline my_btree_node<T, Compare, MIN_DEGREE>* my_btree<T, Compare, MIN_DEGREE>::findEnd()
+{
+	if (empty()) {
+		return nullptr;
+	}
+
+	auto current_node = _root;
+	while (!current_node->leaf()) {
+		current_node = current_node->_children[current_node->keyCount()];
 	}
 	return current_node;
 }
@@ -142,7 +228,8 @@ inline void my_btree<T, Compare, MIN_DEGREE>::insert(const T& key)
 	if (_root) {
 		if (_root->full()) {
 			my_btree_node<T, Compare, MIN_DEGREE>* s = new my_btree_node<T, Compare, MIN_DEGREE>(false);
-			s->_children[0] = _root;
+			s->placeChild(_root, 0);
+
 			s->splitChild(0, _root);
 			int i = 0;
 			if (_compare(s->_keys[0], key)) {
@@ -150,6 +237,8 @@ inline void my_btree<T, Compare, MIN_DEGREE>::insert(const T& key)
 			}
 			s->_children[i]->insert(key);
 			_root = s;
+			_root->my_child_index = 0;
+			_root->parent = nullptr;
 		}
 		else {
 			_root->insert(key);
@@ -177,15 +266,15 @@ inline void my_btree<T, Compare, MIN_DEGREE>::remove(const T& key)
 		}
 		else {
 			_root = _root->_children[0];
+
 		}
 		delete tmp;
 	}
 	_size--;//error, co kdyz tu vubec neni...
 }
 
-
 template<class T, class Compare, int MIN_DEGREE>
-template<bool is_const>
+template<bool is_const, bool reversed=false>
 class my_btree<T, Compare, MIN_DEGREE>::iterator_impl
 {
 	friend class my_btree<T, Compare, MIN_DEGREE>;
@@ -193,7 +282,7 @@ class my_btree<T, Compare, MIN_DEGREE>::iterator_impl
 	using node_pointer = std::conditional_t<is_const, const my_btree_node<T, Compare, MIN_DEGREE>*, my_btree_node<T, Compare, MIN_DEGREE>*>;
 
 	node_pointer current_node;
-	size_t current_index;
+	int current_index;
 
 public:
 	using iterator_category = std::forward_iterator_tag;
@@ -220,10 +309,10 @@ public:
 	iterator_impl& operator++()
 	{
 		if (current_node->leaf()) {
-			move_leaf_node();
+			move_leaf_node<reversed>();
 		}
 		else {
-			move_nonleaf_node();
+			move_nonleaf_node<reversed>();
 		}
 		return *this;
 	}
@@ -248,7 +337,7 @@ public:
 private:
 	iterator_impl(node_pointer np = nullptr, size_t index = 0)
 		: current_node(np),
-		current_index(0)
+		current_index(index)
 	{
 	}
 
@@ -257,7 +346,8 @@ private:
 		return current_node;
 	}
 
-	void move_leaf_node()
+	template<bool reversed>
+	std::enable_if_t<!reversed> move_leaf_node()
 	{
 		if (current_index < current_node->keyCount() - 1) {
 			current_index++;
@@ -275,12 +365,45 @@ private:
 		current_index = 0;
 	}
 
-	void move_nonleaf_node() 
+	template<bool reversed>
+	std::enable_if_t<reversed> move_leaf_node()
+	{
+		if (current_index > 0) {
+			current_index--;
+			return;
+		}
+
+		while (current_node->parent) {
+			current_index = current_node->my_child_index - 1;
+			current_node = current_node->parent;
+			if (current_index >= 0) {
+				std::cout << "k" << current_index;
+				return;
+			}
+		}
+		std::cout << "nullptr";
+		current_node = nullptr;
+		current_index = 0;
+	}
+
+	template<bool reversed>
+	std::enable_if_t<!reversed> move_nonleaf_node()
 	{
 		current_node = current_node->_children[current_index + 1];
 		current_index = 0;
 		while (!current_node->leaf()) {
 			current_node = current_node->_children[current_index];
+		}
+	}
+
+	template<bool reversed>
+	std::enable_if_t<reversed> move_nonleaf_node()
+	{
+		current_node = current_node->_children[current_index];
+		current_index = current_node->keyCount() - 1;
+		while (!current_node->leaf()) {
+			current_node = current_node->_children[current_index + 1];
+			current_index = current_node->keyCount() - 1;
 		}
 	}
 };

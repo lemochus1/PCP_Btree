@@ -150,6 +150,7 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="my_btree.cpp" />
+    <ClCompile Include="my_btree_iterator_impl.cpp" />
     <ClCompile Include="my_btree_node.cpp" />
     <ClCompile Include="my_map.cpp" />
   </ItemGroup>

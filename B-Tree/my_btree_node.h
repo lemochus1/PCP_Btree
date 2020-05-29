@@ -47,6 +47,8 @@ private:
 	void borrowFromNext(int idx);
 	void merge(int idx);
 
+	void placeChild(my_btree_node* node, int idx);
+
 	int _leaf;
 	int _key_count;
 
@@ -146,7 +148,7 @@ inline void my_btree_node<T, Compare, min_degree>::print(int deepness) const noe
 		for (int i = 0; i < keyCount(); i++) {
 			std::cout << " " << _keys[i];
 		}
-		std::cout << std::endl;
+		std::cout << "'" << my_child_index << "'"<< std::endl;
 	}
 	else {
 		for (int i = 0; i < keyCount(); i++) {
@@ -154,6 +156,7 @@ inline void my_btree_node<T, Compare, min_degree>::print(int deepness) const noe
 			std::cout << indentation << _keys[i] << std::endl;
 		}
 		_children[keyCount()]->print(deepness + 1);
+		std::cout << indentation << "'" << my_child_index << "'" << std::endl;
 	}
 }
 
@@ -212,21 +215,16 @@ inline void my_btree_node<T, Compare, min_degree>::splitChild(int i, my_btree_no
 
 	if (!node->leaf()) {
 		for (int j = 0; j < min_degree; j++) {
-			new_node->_children[j] = node->_children[j + min_degree];
-			new_node->_children[j]->parent = new_node;
-			new_node->_children[j]->my_child_index = j;
+			new_node->placeChild(node->_children[j + min_degree], j);
 		}
 	}
 	node->_key_count = min_degree - 1;
 
 	for (int j = keyCount(); j >= i+1; j--) {
-		_children[j + 1] = _children[j];
-		_children[j + 1]->my_child_index = j + 1;
+		placeChild(_children[j], j + 1);
 	}
 
-	_children[i + 1] = new_node;
-	_children[i + 1]->my_child_index = i + 1;
-	_children[i + 1]->parent = this;
+	placeChild(new_node, i + 1);
 	
 	for (int j = keyCount() - 1; j >= i; j--) {
 		_keys[j + 1] = _keys[j];
@@ -352,12 +350,12 @@ inline void my_btree_node<T, Compare, min_degree>::borrowFromPrev(int idx)
 	}
 	if (!child->leaf()) {
 		for (int i = child->keyCount(); i >= 0; --i) {
-			child->_children[i + 1] = child->_children[i];
+			child->placeChild(child->_children[i], i+1);
 		}
 	}
 	child->_keys[0] = _keys[idx - 1];
 	if (!child->leaf()) {
-		child->_children[0] = sibling->_children[sibling->keyCount()];
+		child->placeChild(sibling->_children[sibling->keyCount()], 0);
 	}
 
 	_keys[idx-1] = sibling->_keys[sibling->keyCount()-1];
@@ -374,7 +372,7 @@ inline void my_btree_node<T, Compare, min_degree>::borrowFromNext(int idx)
 	child->_keys[child->keyCount()] = _keys[idx];
 
 	if (!child->leaf()) {
-		child->_children[child->keyCount() + 1] = sibling->_children[0];
+		child->placeChild(sibling->_children[0], child->keyCount() + 1);
 	}
 	_keys[idx] = sibling->_keys[0];
 
@@ -384,7 +382,7 @@ inline void my_btree_node<T, Compare, min_degree>::borrowFromNext(int idx)
 
 	if (!sibling->leaf()) {
 		for (int i = 1; i <= sibling->keyCount(); ++i) {
-			sibling->_children[i - 1] = sibling->_children[i];
+			sibling->placeChild(sibling->_children[i], i - 1);
 		}
 	}
 	child->_key_count += 1;
@@ -406,9 +404,7 @@ inline void my_btree_node<T, Compare, min_degree>::merge(int idx)
 	if (!child->leaf())
 	{
 		for (int i = 0; i <= sibling->keyCount(); ++i) {
-			child->_children[i + min_degree] = sibling->_children[i];
-			child->_children[i + min_degree]->my_child_index = i + min_degree;
-			child->_children[i + min_degree]->parent = child;
+			child->placeChild(sibling->_children[i], i + min_degree);
 		}
 	}
 
@@ -417,13 +413,19 @@ inline void my_btree_node<T, Compare, min_degree>::merge(int idx)
 	}
 
 	for (int i = idx + 2; i <= keyCount(); ++i) {
-		_children[i - 1] = _children[i];
-		_children[i - 1]->my_child_index = i - 1;
+		placeChild(_children[i], i - 1);
 	}
 
 	child->_key_count += (sibling->keyCount() + 1);
 	_key_count--;
 
 	delete sibling;
+}
+template<class T, class Compare, int min_degree>
+inline void my_btree_node<T, Compare, min_degree>::placeChild(my_btree_node<T, Compare, min_degree>* node, int idx)
+{
+	node->parent = this;
+	_children[idx] = node;
+	_children[idx]->my_child_index = idx;
 }
 ;

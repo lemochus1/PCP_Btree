@@ -13,9 +13,6 @@ class my_map
 	template<bool is_const, bool reversed = false>
 	class iterator_impl;
 	
-	const size_t MIN_NODE_DEGREE = 5;
-	using my_map_impl = my_btree<Key, Compare, MIN_NODE_DEGREE>;
-
 public:
 	using key_type = Key;
 	using mapped_type = T;
@@ -23,11 +20,9 @@ public:
 	using size_type = std::size_t;
 	using difference_type = std::ptrdiff_t;
 	using key_compare = Compare;
-	using allocator_type = Allocator;
 	using reference = value_type&;
 	using const_reference = const value_type&;
-	using pointer = std::allocator_traits<Allocator>::pointer;
-	using const_pointer = std::allocator_traits<Allocator>::const_pointer;
+
 	using iterator = iterator_impl<false>;
 	using const_iterator = iterator_impl<true>;
 	using reverse_iterator = iterator_impl<false, true>;
@@ -146,7 +141,27 @@ public:
 	void print() const noexcept;
 
 private:
+	template<class Compare>
+	class CompareValueType
+		: public std::binary_function<value_type, value_type, bool>
+	{
+		Compare _compare;
 
+	public:
+		CompareValueType(Compare compare)
+			: _compare(compare)
+		{}
+
+		bool operator()(const value_type& first, const value_type& second) const
+		{
+			return compare(first.first, second.first);
+		}
+	};
+
+	const size_t MIN_NODE_DEGREE = 5;
+	using my_map_impl = my_btree<value_type, CompareValueType, MIN_NODE_DEGREE>;
+
+	my_map_impl* _map;
 };
 
 template<class Key, class T, class Compare, class Allocator>
