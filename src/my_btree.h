@@ -14,7 +14,7 @@
 
 #define assertm(exp, msg) assert(((void)msg, exp))
 
-template<class T, class Compare = std::less<T>, int MIN_DEGREE = 3 >
+template<class T, class Compare = std::less<T>, int MIN_DEGREE = 3>
 class my_btree {
 
 	template<bool is_const, bool reversed=false>
@@ -27,7 +27,6 @@ public:
 
 	using iterator = iterator_impl<true>;
 	using const_iterator = iterator_impl<false>;
-	
 	using reverse_iterator = iterator_impl<true, true>;
 	using const_reverse_iterator = iterator_impl<false, true>;
 	
@@ -75,15 +74,17 @@ public:
 	const_reverse_iterator rend() const noexcept { return const_reverse_iterator{ }; }
 
 private:
+	static Compare compare;
+
 	node_type* _root;
-
 	size_t _size;
-	Compare _compare;//mel by byt static... pak v map z toho udelat nested...
-
+	
 	node_type* findBegin() const noexcept;
 	node_type* findEnd() const noexcept;
 	std::pair<node_type*, int> findReversedBegin() const noexcept;
 };
+template<class T, class Compare, int MIN_DEGREE>
+Compare my_btree<T, Compare, MIN_DEGREE>::compare = Compare();
 
 template<class T, class Compare, int MIN_DEGREE>
 typename typename my_btree<T, Compare, MIN_DEGREE>::node_type* my_btree<T, Compare, MIN_DEGREE>::findBegin() const noexcept
@@ -283,16 +284,16 @@ inline void my_btree<T, Compare, MIN_DEGREE>::insert(const value_type& key)
 {
 	if (_root) {
 		if (_root->full()) {
-			my_btree_node<T, Compare, MIN_DEGREE>* s = new my_btree_node<T, Compare, MIN_DEGREE>{ false };
-			s->placeChild(_root, 0);
+			my_btree_node<T, Compare, MIN_DEGREE>* new_node = new my_btree_node<T, Compare, MIN_DEGREE>{ false };
+			new_node->placeChild(_root, 0);
 
-			s->splitChild(0, _root);
+			new_node->splitChild(0, _root);
 			int i = 0;
-			if (_compare(s->_keys[0], key)) {
+			if (compare(new_node->_keys[0], key)) {
 				i++;
 			}
-			s->_children[i]->insert(key);
-			_root = s;
+			new_node->_children[i]->insert(key);
+			_root = new_node;
 			_root->my_child_index = 0;
 			_root->parent = nullptr;
 		}

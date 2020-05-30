@@ -24,6 +24,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>BTree</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>src</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -150,10 +151,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="my_btree.cpp" />
-    <ClCompile Include="my_btree_iterator_impl.cpp" />
-    <ClCompile Include="my_btree_node.cpp" />
-    <ClCompile Include="my_map.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="has_member.h" />

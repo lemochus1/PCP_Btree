@@ -53,14 +53,10 @@ public:
 	size_type size() const noexcept;
 
 	void clear() noexcept;
-	void insert();
-	template<class... Args>
-	std::pair<iterator, bool> emplace(Args&&... args);
+	bool insert(const key_type& key, const mapped_type& value);
 	template <class... Args>
-	std::pair<iterator, bool> try_emplace(const key_type& key, Args&&... args);
-	iterator erase(iterator pos);
-	iterator erase(const_iterator pos);
-	size_type erase(const key_type& key);
+	bool try_emplace(const key_type& key, Args&&... args);
+	void erase(const key_type& key);
 
 	void swap(my_map& other) noexcept;
 	template<class OtherCompare>
@@ -87,58 +83,36 @@ public:
 
 	void print() const noexcept;
 
-	template<class T>
-	auto serialize_imp(std::ostream& os, T const& obj, int)
-		-> decltype(os << obj, void())
-	{
-		os << obj;
-	}
-
-	template<class T>
-	auto serialize_imp(std::ostream& os, T const& obj, long)
-		-> decltype(obj.stream(os), void())
-	{
-		obj.stream(os);
-	}
-
-	template<class T>
-	auto serialize(std::ostream& os, T const& obj)
-		-> decltype(serialize_imp(os, obj, 0), void())
-	{
-		serialize_imp(os, obj, 0);
-	}
-
-
-
 private:
 	struct value_type
 	{
-		Key first;
-		T second;
+		key_type first;
+		mapped_type second;
 
-		value_type(const Key& key) {
-			first = key;
-		}
-
-		value_type(Key&& key) {
-			first = std::move(key);
-		}
-
-		value_type(const std::pair<Key, T>& pair) {
-			first = pair.first;
-			second = pair.second;
-		}
-
+		value_type(const key_type& key)
+			: first{ key }
+		{ }
+		value_type(key_type&& key)
+			: first{ std::move(key) } 
+		{ }
+		value_type(const key_type& key, const mapped_type& value) 
+			: first{ key },
+			second{ value }
+		{ }
+		value_type(const std::pair<key_type, mapped_type>& pair) 
+			: first{ pair.first },
+			second{ pair.second }
+		{ }
 	};
 
 	class CompareValueType
 		: public std::binary_function<value_type, value_type, bool>
 	{
-		Compare _compare;
+		Compare compare;
 
 	public:
 		CompareValueType(Compare compare)
-			: _compare(compare)
+			: compare(compare)
 		{ }
 
 		bool operator()(const value_type& first, const value_type& second) const
@@ -268,6 +242,22 @@ inline void my_map<Key, T, Compare>::clear() noexcept
 }
 
 template<class Key, class T, class Compare>
+inline  bool my_map<Key, T, Compare>::insert(const key_type& key, const mapped_type& value)
+{
+	if (_map->contains(key)) {
+		return false;
+	}
+	_map->insert({ key, value });
+	return true;
+}
+
+template<class Key, class T, class Compare>
+inline void my_map<Key, T, Compare>::erase(const key_type& key)
+{
+	_map->remove(key);
+}
+
+template<class Key, class T, class Compare>
 inline void my_map<Key, T, Compare>::swap(my_map& other) noexcept
 {
 	std::swap(_map, other->_map);
@@ -280,9 +270,29 @@ inline typename my_map<Key, T, Compare>::size_type my_map<Key, T, Compare>::coun
 }
 
 template<class Key, class T, class Compare>
+inline typename my_map<Key, T, Compare>::iterator my_map<Key, T, Compare>::find(const Key& key)
+{
+	return _map->find(key);
+}
+
+template<class Key, class T, class Compare>
+inline typename my_map<Key, T, Compare>::const_iterator my_map<Key, T, Compare>::find(const Key& key) const
+{
+	return _map->find(key);
+}
+
+template<class Key, class T, class Compare>
 inline bool my_map<Key, T, Compare>::contains(const Key& key) const
 {
 	return find(key) != end();
+}
+
+template<class Key, class T, class Compare>
+template<class ...Args>
+inline bool my_map<Key, T, Compare>::try_emplace(const key_type& key, Args&& ...args)
+{
+	value_type value(args...);
+	return insert(value);
 }
 
 template<class Key, class T, class Compare>

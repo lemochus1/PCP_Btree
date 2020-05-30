@@ -21,28 +21,28 @@ struct D {
 	A* not_first;
 };
 
-TEST(MemberType, HasStaticResult) {
+TEST(HasMember, StaticResult) {
 	EXPECT_TRUE(has_first<A>::result);
 	EXPECT_FALSE(has_first<B>::result);
 	EXPECT_TRUE(has_first<C>::result);
 	EXPECT_FALSE(has_first<D>::result);
 }
 
-TEST(MemberType, HasUsing_v) {
+TEST(HasMember, Using_v) {
 	EXPECT_TRUE(has_first_v<A>);
 	EXPECT_FALSE(has_first_v<B>);
 	EXPECT_TRUE(has_first_v<C>);
 	EXPECT_FALSE(has_first_v<D>);
 }
 
-TEST(MemberType, HasPointer) {
+TEST(HasMember, Pointer) {
 	EXPECT_TRUE(has_first_v<A*>);
 	EXPECT_FALSE(has_first_v<B*>);
 	EXPECT_TRUE(has_first_v<C*>);
 	EXPECT_FALSE(has_first_v<D*>);
 }
 
-TEST(MemberType, HasFundamentalTypes) {
+TEST(HasMember, FundamentalTypes) {
 	EXPECT_FALSE(has_first_v<int>);
 	EXPECT_FALSE(has_first<int>::result);
 	EXPECT_FALSE(has_first_v<std::string>);
