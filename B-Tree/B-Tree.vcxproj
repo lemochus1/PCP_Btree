@@ -156,9 +156,14 @@
     <ClCompile Include="my_map.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="has_member.h" />
+    <ClInclude Include="member_type.h" />
     <ClInclude Include="my_btree.h" />
     <ClInclude Include="my_btree_node.h" />
     <ClInclude Include="my_map.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

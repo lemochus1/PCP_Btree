@@ -35,12 +35,12 @@ public:
 	my_map();
 	my_map(my_map& other);
 	my_map(my_map&& other);
-	my_map(std::initializer_list<value_type> init);
+	my_map(std::initializer_list<std::pair<Key, T>> init);
 	~my_map() = default;
 	
 	my_map& operator=(const my_map& other);
 	my_map& operator=(my_map&& other) noexcept;
-	my_map& operator=(std::initializer_list<value_type> ilist);
+	my_map& operator=(std::initializer_list<std::pair<Key, T>> ilist);
 	
 	T& at(const Key& key);
 	const T& at(const Key& key) const;
@@ -71,22 +71,44 @@ public:
 	const_iterator find(const Key& key) const;
 	bool contains(const Key& key) const;
 
-	iterator begin() noexcept;
-	iterator end() noexcept;
-	const_iterator cbegin() const noexcept;
-	const_iterator cend() const noexcept;
-	const_iterator begin() const noexcept;
-	const_iterator end() const noexcept;
+	iterator begin() noexcept {return _map->begin()}
+	iterator end() noexcept { return _map->end() }
+	const_iterator cbegin() const noexcept { return _map->cbegin() }
+	const_iterator cend() const noexcept { return _map->cend() }
+	const_iterator begin() const noexcept { return _map->begin() }
+	const_iterator end() const noexcept { return _map->end() }
 
-	reverse_iterator rbegin() noexcept;
-	reverse_iterator rend() noexcept;
-	const_reverse_iterator crbegin() const noexcept;
-	const_reverse_iterator crend() const noexcept;
-	const_reverse_iterator rbegin() const noexcept;
-	const_reverse_iterator rend() const noexcept;
-
+	reverse_iterator rbegin() noexcept { return _map->rbegin() }
+	reverse_iterator rend() noexcept { return _map->rend() }
+	const_reverse_iterator crbegin() const noexcept { return _map->crbegin() }
+	const_reverse_iterator crend() const noexcept { return _map->crend() }
+	const_reverse_iterator rbegin() const noexcept { return _map->rbegin() }
+	const_reverse_iterator rend() const noexcept { return _map->rend() }
 
 	void print() const noexcept;
+
+	template<class T>
+	auto serialize_imp(std::ostream& os, T const& obj, int)
+		-> decltype(os << obj, void())
+	{
+		os << obj;
+	}
+
+	template<class T>
+	auto serialize_imp(std::ostream& os, T const& obj, long)
+		-> decltype(obj.stream(os), void())
+	{
+		obj.stream(os);
+	}
+
+	template<class T>
+	auto serialize(std::ostream& os, T const& obj)
+		-> decltype(serialize_imp(os, obj, 0), void())
+	{
+		serialize_imp(os, obj, 0);
+	}
+
+
 
 private:
 	struct value_type
@@ -100,6 +122,11 @@ private:
 
 		value_type(Key&& key) {
 			first = std::move(key);
+		}
+
+		value_type(const std::pair<Key, T>& pair) {
+			first = pair.first;
+			second = pair.second;
 		}
 
 	};
@@ -144,7 +171,7 @@ inline my_map<Key, T, Compare>::my_map(my_map&& other)
 }
 
 template<class Key, class T, class Compare>
-inline my_map<Key, T, Compare>::my_map(std::initializer_list<value_type> init)
+inline my_map<Key, T, Compare>::my_map(std::initializer_list<std::pair<Key, T>> init)
 	: my_map{ }
 {
 	for (const auto& value : init) {
@@ -170,7 +197,7 @@ inline my_map<Key, T, Compare>& my_map<Key, T, Compare>::operator=(my_map&& othe
 }
 
 template<class Key, class T, class Compare>
-inline my_map<Key, T, Compare>& my_map<Key, T, Compare>::operator=(std::initializer_list<value_type> ilist)
+inline my_map<Key, T, Compare>& my_map<Key, T, Compare>::operator=(std::initializer_list<std::pair<Key, T>> ilist)
 {
 	clear();
 	for (const auto& value : init) {

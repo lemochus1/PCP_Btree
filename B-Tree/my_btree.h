@@ -9,6 +9,8 @@
 #include <stdexcept> 
 
 #include "my_btree_node.h"
+#include "has_member.h"
+#include "member_type.h"
 
 #define assertm(exp, msg) assert(((void)msg, exp))
 
@@ -334,6 +336,9 @@ inline void my_btree<T, Compare, MIN_DEGREE>::erase(const value_type& key)
 	} while (contains(key));
 }
 
+GENERATE_HAS_MEMBER(first)
+GENERATE_MEMBER_TYPE(first)
+
 template<class T, class Compare, int MIN_DEGREE>
 template<bool is_const, bool reversed>
 class my_btree<T, Compare, MIN_DEGREE>::iterator_impl
@@ -347,26 +352,54 @@ class my_btree<T, Compare, MIN_DEGREE>::iterator_impl
 
 public:
 	using iterator_category = std::forward_iterator_tag;
-	using value_type = T;
+	using value_type = std::conditional_t<has_first_v<T>, first_t<T>, T>;
 	using difference_type = std::ptrdiff_t;
-	using reference = std::conditional_t<is_const, const T&, T&>;
-	using pointer = std::conditional_t<is_const, const T*, T*>;
+	using reference = std::conditional_t<is_const, const value_type&, value_type&>;
+	using pointer = std::conditional_t<is_const, const value_type*, value_type*>;
 
 	iterator_impl(const iterator_impl& iter)
 		: _current_node{ iter._current_node },
 		_current_index{ iter._current_index }
 	{ }
 
-	reference operator*() const { return _current_node->_keys[_current_index]; }
-	pointer operator->() const { return &(_current_node->_keys[_current_index]); }
+	reference operator*() const 
+	{ 
+		return *operator->();
+		//if constexpr (has_first_v<T>) {
+		//	if constexpr (std::is_pointer_v<T>) {
+		//		return _current_node->_keys[_current_index]->first;
+		//	}
+		//	else {
+		//		return _current_node->_keys[_current_index].first;
+		//	}
+		//}
+		//else {
+		//	return _current_node->_keys[_current_index];
+		//}
+	}
+	pointer operator->() const 
+	{ 
+		if constexpr (has_first_v<T>) {
+			if constexpr (std::is_pointer_v<T>) {
+				return &(_current_node->_keys[_current_index]->first);
+			}
+			else {
+				return &(_current_node->_keys[_current_index].first);
+			}
+		}
+		else {
+			return &(_current_node->_keys[_current_index]);
+		}
+	}
 
-	iterator_impl& operator++() { move_self<reversed>(); return *this; }
+	iterator_impl& operator++() { move_self(); return *this; }
 	iterator_impl operator++(int)
 	{
 		iterator_impl pom(*this);
 		++* this;
 		return pom;
 	}
+
 	bool operator==(const iterator_impl& iter)
 	{
 		return _current_node == iter._current_node && _current_index == iter._current_index;
@@ -380,6 +413,10 @@ private:
 	{ }
 
 	node_pointer get_current_node() const { return _current_node; }
+
+	void move_self() {
+		move_self<reversed>();
+	}
 
 	template<bool reversed>
 	std::enable_if_t<!reversed> move_self()

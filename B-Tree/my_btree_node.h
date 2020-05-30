@@ -107,7 +107,7 @@ inline size_t my_btree_node<T, Compare, min_degree>::count(const value_type& key
 		for (int i = idx; i < keyCount(); i++) {
 			if (_keys[i] == key) {
 				total++;
-				if (i + 1 < childCount()) {
+				if (1 + i < childCount()) {
 					total += _children[i + 1]->count(key);
 				}
 			}
