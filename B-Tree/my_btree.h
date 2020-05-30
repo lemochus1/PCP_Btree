@@ -21,6 +21,8 @@ class my_btree {
 	using node_type = my_btree_node<T, Compare, MIN_DEGREE>;
 
 public:
+	using value_type = T;
+
 	using iterator = iterator_impl<true>;
 	using const_iterator = iterator_impl<false>;
 	
@@ -30,21 +32,24 @@ public:
 	my_btree();
 	my_btree(my_btree& other);
 	my_btree(my_btree&& other);
-	my_btree(std::initializer_list<T> init);
+	my_btree(std::initializer_list<value_type> init);
 	~my_btree();
 
 	[[nodiscard]] bool empty() const noexcept;
 	[[nodiscard]] size_t size() const noexcept;
 
-	void insert(const T& key);
+	void insert(const value_type& key);
 
-	void remove(const T& key);
-	void erase(const T& key);
+	void remove(const value_type& key);
+	void erase(const value_type& key);
 	void clear() noexcept;
 
-	[[nodiscard]] size_t count(const T& key) const;
-	[[nodiscard]] bool contains(const T& key) const;
+	[[nodiscard]] size_t count(const value_type& key) const;
+	[[nodiscard]] bool contains(const value_type& key) const;
 	
+	[[nodiscard]] iterator find(const value_type& key);
+	[[nodiscard]] const_iterator find(const value_type& key) const;
+
 	void concat(my_btree<T, Compare, MIN_DEGREE>& other);
 	void swap(my_btree<T, Compare, MIN_DEGREE>&& other);
 
@@ -191,7 +196,7 @@ inline void my_btree<T, Compare, MIN_DEGREE>::clear() noexcept
 }
 
 template<class T, class Compare, int MIN_DEGREE>
-inline size_t my_btree<T, Compare, MIN_DEGREE>::count(const T& key) const
+inline size_t my_btree<T, Compare, MIN_DEGREE>::count(const value_type& key) const
 {
 	if (empty()) {
 		return 0;
@@ -200,9 +205,29 @@ inline size_t my_btree<T, Compare, MIN_DEGREE>::count(const T& key) const
 }
 
 template<class T, class Compare, int MIN_DEGREE>
-inline bool my_btree<T, Compare, MIN_DEGREE>::contains(const T& key) const
+inline bool my_btree<T, Compare, MIN_DEGREE>::contains(const value_type& key) const
 {
 	return count(key) > 0;
+}
+
+template<class T, class Compare, int MIN_DEGREE>
+inline typename my_btree<T, Compare, MIN_DEGREE>::iterator my_btree<T, Compare, MIN_DEGREE>::find(const value_type& key)
+{
+	if (empty()) {
+		return iterator{ };
+	}
+	auto [node, idx] = _root->find(key);
+	return iterator{ node, idx };
+}
+
+template<class T, class Compare, int MIN_DEGREE>
+inline typename my_btree<T, Compare, MIN_DEGREE>::const_iterator my_btree<T, Compare, MIN_DEGREE>::find(const value_type& key) const
+{
+	if (empty()) {
+		return const_iterator{ };
+	}
+	auto [node, idx] = _root->find(key);
+	return const_iterator{ node, idx };
 }
 
 template<class T, class Compare, int MIN_DEGREE>
@@ -252,7 +277,7 @@ inline typename my_btree<T, Compare, MIN_DEGREE>::const_reverse_iterator my_btre
 
 
 template<class T, class Compare, int MIN_DEGREE>
-inline void my_btree<T, Compare, MIN_DEGREE>::insert(const T& key)
+inline void my_btree<T, Compare, MIN_DEGREE>::insert(const value_type& key)
 {
 	if (_root) {
 		if (_root->full()) {
@@ -282,7 +307,7 @@ inline void my_btree<T, Compare, MIN_DEGREE>::insert(const T& key)
 }
 
 template<class T, class Compare, int MIN_DEGREE>
-inline void my_btree<T, Compare, MIN_DEGREE>::remove(const T& key)
+inline void my_btree<T, Compare, MIN_DEGREE>::remove(const value_type& key)
 {
 	if (empty() || !contains(key)) {
 		throw std::out_of_range("Tried to remove a key from an empty my_btree.");
@@ -302,15 +327,15 @@ inline void my_btree<T, Compare, MIN_DEGREE>::remove(const T& key)
 }
 
 template<class T, class Compare, int MIN_DEGREE>
-inline void my_btree<T, Compare, MIN_DEGREE>::erase(const T& key)
+inline void my_btree<T, Compare, MIN_DEGREE>::erase(const value_type& key)
 {
 	do {
 		remove(key);
-	} while (contains(key);
+	} while (contains(key));
 }
 
 template<class T, class Compare, int MIN_DEGREE>
-template<bool is_const, bool reversed=false>
+template<bool is_const, bool reversed>
 class my_btree<T, Compare, MIN_DEGREE>::iterator_impl
 {
 	friend class my_btree<T, Compare, MIN_DEGREE>;

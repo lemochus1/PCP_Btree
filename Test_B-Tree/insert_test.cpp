@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "../B-Tree/my_btree.h"
 
+using namespace testing;
 TEST(Insert, UniqueValues) {
 	my_btree<int> tree;
 	for (int i = 0; i < 50; i++) {
@@ -38,7 +39,7 @@ TEST(Insert, Size) {
 	for (int i = 0; i < size; i++) {
 		tree.insert(0);
 	}
-	EXPECT_EQ(tree.size(), 2*size);
+	EXPECT_EQ(tree.size(), 2 * size);
 }
 
 TEST(Insert, Contains) {

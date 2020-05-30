@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "B-Tree", "B-Tree\B-Tree.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test_B-Tree", "Test_B-Tree\Test_B-Tree.vcxproj", "{88551173-9459-48B7-9B48-1B431F605CD6}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test_my_map", "Test_my_map\Test_my_map.vcxproj", "{699C9DAA-7F0D-412F-A1CB-120C37B75BEC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,14 @@ Global
 		{88551173-9459-48B7-9B48-1B431F605CD6}.Release|x64.Build.0 = Release|x64
 		{88551173-9459-48B7-9B48-1B431F605CD6}.Release|x86.ActiveCfg = Release|Win32
 		{88551173-9459-48B7-9B48-1B431F605CD6}.Release|x86.Build.0 = Release|Win32
+		{699C9DAA-7F0D-412F-A1CB-120C37B75BEC}.Debug|x64.ActiveCfg = Debug|x64
+		{699C9DAA-7F0D-412F-A1CB-120C37B75BEC}.Debug|x64.Build.0 = Debug|x64
+		{699C9DAA-7F0D-412F-A1CB-120C37B75BEC}.Debug|x86.ActiveCfg = Debug|Win32
+		{699C9DAA-7F0D-412F-A1CB-120C37B75BEC}.Debug|x86.Build.0 = Debug|Win32
+		{699C9DAA-7F0D-412F-A1CB-120C37B75BEC}.Release|x64.ActiveCfg = Release|x64
+		{699C9DAA-7F0D-412F-A1CB-120C37B75BEC}.Release|x64.Build.0 = Release|x64
+		{699C9DAA-7F0D-412F-A1CB-120C37B75BEC}.Release|x86.ActiveCfg = Release|Win32
+		{699C9DAA-7F0D-412F-A1CB-120C37B75BEC}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
