@@ -21,9 +21,7 @@ TEST(Iterator, Reversed) {
 		tree.insert(i);
 	}
 	int i = 20;
-	tree.print();
-	for (my_btree<int>::reverse_iterator it = tree.rbegin(); it != tree.rend(); ++it)
-	{
+	for (my_btree<int>::reverse_iterator it = tree.rbegin(); it != tree.rend(); ++it) {
 		EXPECT_EQ(*it, i) << *it;
 		i--;
 	}

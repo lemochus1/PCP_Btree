@@ -25,10 +25,10 @@ class my_btree {
 public:
 	using value_type = T;
 
-	using iterator = iterator_impl<true>;
-	using const_iterator = iterator_impl<false>;
-	using reverse_iterator = iterator_impl<true, true>;
-	using const_reverse_iterator = iterator_impl<false, true>;
+	using iterator = iterator_impl<false>;
+	using const_iterator = iterator_impl<true>;
+	using reverse_iterator = iterator_impl<false, true>;
+	using const_reverse_iterator = iterator_impl<true, true>;
 	
 	my_btree();
 	my_btree(my_btree& other);
@@ -287,7 +287,7 @@ inline void my_btree<T, Compare, MIN_DEGREE>::insert(const value_type& key)
 			my_btree_node<T, Compare, MIN_DEGREE>* new_node = new my_btree_node<T, Compare, MIN_DEGREE>{ false };
 			new_node->placeChild(_root, 0);
 
-			new_node->splitChild(0, _root);
+			new_node->splitChild(0);
 			int i = 0;
 			if (compare(new_node->_keys[0], key)) {
 				i++;
@@ -337,8 +337,8 @@ inline void my_btree<T, Compare, MIN_DEGREE>::erase(const value_type& key)
 	} while (contains(key));
 }
 
-GENERATE_HAS_MEMBER(first)
-GENERATE_MEMBER_TYPE(first)
+GENERATE_HAS_MEMBER(second)
+GENERATE_MEMBER_TYPE(second)
 
 template<class T, class Compare, int MIN_DEGREE>
 template<bool is_const, bool reversed>
@@ -353,7 +353,7 @@ class my_btree<T, Compare, MIN_DEGREE>::iterator_impl
 
 public:
 	using iterator_category = std::forward_iterator_tag;
-	using value_type = std::conditional_t<has_first_v<T>, first_t<T>, T>;
+	using value_type = std::conditional_t<has_second_v<T>, second_t<T>, T>;
 	using difference_type = std::ptrdiff_t;
 	using reference = std::conditional_t<is_const, const value_type&, value_type&>;
 	using pointer = std::conditional_t<is_const, const value_type*, value_type*>;
@@ -365,27 +365,16 @@ public:
 
 	reference operator*() const 
 	{ 
-		return *operator->();
-		//if constexpr (has_first_v<T>) {
-		//	if constexpr (std::is_pointer_v<T>) {
-		//		return _current_node->_keys[_current_index]->first;
-		//	}
-		//	else {
-		//		return _current_node->_keys[_current_index].first;
-		//	}
-		//}
-		//else {
-		//	return _current_node->_keys[_current_index];
-		//}
+		return *(operator->());
 	}
 	pointer operator->() const 
 	{ 
-		if constexpr (has_first_v<T>) {
+		if constexpr (has_second_v<T>) {
 			if constexpr (std::is_pointer_v<T>) {
-				return &(_current_node->_keys[_current_index]->first);
+				return &(_current_node->_keys[_current_index]->second);
 			}
 			else {
-				return &(_current_node->_keys[_current_index].first);
+				return &(_current_node->_keys[_current_index].second);
 			}
 		}
 		else {
@@ -405,6 +394,7 @@ public:
 	{
 		return _current_node == iter._current_node && _current_index == iter._current_index;
 	}
+
 	bool operator !=(const iterator_impl& iter) { return !(*this == iter); }
 
 private:

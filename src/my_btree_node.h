@@ -19,7 +19,8 @@ public:
 	size_t keyCount() const noexcept;
 	size_t childCount() const noexcept;
 	size_t count(const value_type& key) const;
-	std::pair<my_btree_node*, size_t> find(const value_type& key);
+	std::pair<my_btree_node*, int> find(const value_type& key) noexcept;
+	std::pair<const my_btree_node*, int> find(const value_type& key) const noexcept;
 
 	void insert(const value_type& key);
 
@@ -29,13 +30,13 @@ public:
 private:
 	int findKey(const value_type& key) const;
 
-	void splitChild(int child_index, my_btree_node* node);
+	void splitChild(int child_index);
 
 	void removeFromLeaf(int idx);
 	void removeFromNonLeaf(int idx);
 
-	value_type getPred(int idx);
-	value_type getSucc(int idx);
+	value_type getPreviousKey(int idx);
+	value_type getNextKey(int idx);
 
 	void fill(int idx);
 	void borrowFromPrev(int idx);
@@ -45,7 +46,8 @@ private:
 	void placeChild(my_btree_node* node, int idx);
 
 	void print(int deepness) const noexcept;
-	my_btree_node* search(const value_type& key) const noexcept;
+	my_btree_node* search(const value_type& key) noexcept;
+	const my_btree_node* search(const value_type& key) const noexcept;
 
 	bool _leaf;
 	size_t _key_count;
@@ -56,14 +58,17 @@ private:
 	my_btree_node<T, Compare, min_degree>* parent;
 	size_t my_child_index;
 
-	Compare _compare;
+	static Compare compare;
 };
 
 template<class T, class Compare, int min_degree>
-inline my_btree_node <T, Compare, min_degree> ::my_btree_node(bool leaf)
-	: _leaf(leaf),
-	_key_count(0),
-	my_child_index(0)
+Compare my_btree_node<T, Compare, min_degree>::compare = Compare();
+
+template<class T, class Compare, int min_degree>
+inline my_btree_node<T, Compare, min_degree>::my_btree_node(bool leaf)
+	: _leaf{ leaf },
+	_key_count{ 0 },
+	my_child_index{ 0 }
 {
 	parent = nullptr;
 }
@@ -103,30 +108,43 @@ inline size_t my_btree_node<T, Compare, min_degree>::count(const value_type& key
 {
 	size_t total = 0;
 	int idx = findKey(key);
-	if (_keys[idx]  == key) {
-		for (int i = idx; i < keyCount(); i++) {
-			if (_keys[i] == key) {
-				total++;
-				if (1 + i < childCount()) {
-					total += _children[i + 1]->count(key);
-				}
-			}
-		}
-	}
 	if (idx < childCount()) {
 		total += _children[idx]->count(key);
+	}
+	for (int i = idx; i < keyCount(); i++) {
+		if (_keys[i] == key) {
+			total++;
+			if (i + 1 < childCount()) {
+				total += _children[i + 1]->count(key);
+			}
+		}
 	}
 	return total;
 }
 
 template<class T, class Compare, int min_degree>
-inline std::pair<my_btree_node<T, Compare, min_degree>*, size_t> my_btree_node<T, Compare, min_degree>::find(const value_type& key)
+inline std::pair<const my_btree_node<T, Compare, min_degree>*, int> my_btree_node<T, Compare, min_degree>::find(const value_type& key) const noexcept
 {
 	auto node = search(key);
 	if (!node) {
-		return {nullptr, 0};
+		return { nullptr, 0 };
 	}
-	size_t idx = node->findKey(key);
+	int idx = node->findKey(key);
+	if (idx < node->keyCount()) {
+		return { node, idx };
+	}
+	return { nullptr, 0 };
+}
+
+
+template<class T, class Compare, int min_degree>
+inline std::pair<my_btree_node<T, Compare, min_degree>*, int> my_btree_node<T, Compare, min_degree>::find(const value_type& key) noexcept
+{
+	auto node = search(key);
+	if (!node) {
+		return { nullptr, 0 };
+	}
+	int idx = node->findKey(key);
 	if (idx < node->keyCount()) {
 		return { node, idx };
 	}
@@ -164,12 +182,27 @@ inline void my_btree_node<T, Compare, min_degree>::print(int deepness) const noe
 		std::cout << indentation << "'" << my_child_index << "'" << std::endl;
 	}
 }
-
 template<class T, class Compare, int min_degree>
-inline my_btree_node<T, Compare, min_degree>* my_btree_node<T, Compare, min_degree>::search(const value_type& key) const noexcept
+inline my_btree_node<T, Compare, min_degree>* my_btree_node<T, Compare, min_degree>::search(const value_type& key) noexcept
 {
 	int i = 0;
-	while (i < keyCount() && _compare(key, _keys[i])) {
+	while (i < keyCount() && compare(_keys[i], key)) {
+		i++;
+	}
+	if (_keys[i] == key) {
+		return this;
+	}
+	if (leaf()) {
+		return nullptr;
+	}
+	return _children[i]->search(key);
+}
+
+template<class T, class Compare, int min_degree>
+inline const my_btree_node<T, Compare, min_degree>* my_btree_node<T, Compare, min_degree>::search(const value_type& key) const noexcept
+{
+	int i = 0;
+	while (i < keyCount() && compare(_keys[i], key)) {
 		i++;
 	}
 	if (_keys[i] == key) {
@@ -187,7 +220,7 @@ inline void my_btree_node<T, Compare, min_degree>::insert(const value_type& key)
 	int i = keyCount() - 1;
 
 	if (leaf()) {
-		while (i >= 0 && _compare(key, _keys[i])) {
+		while (i >= 0 && compare(key, _keys[i])) {
 			_keys[i + 1] = _keys[i];
 			i--;
 		}
@@ -195,12 +228,12 @@ inline void my_btree_node<T, Compare, min_degree>::insert(const value_type& key)
 		_key_count++;
 	}
 	else {
-		while (i >= 0 && _compare(key, _keys[i])) {
+		while (i >= 0 && compare(key, _keys[i])) {
 			i--;
 		}
 		if (_children[i + 1]->full()) {
-			splitChild(i + 1, _children[i + 1]);
-			if (_compare(_keys[i + 1], key)) {
+			splitChild(i + 1);
+			if (compare(_keys[i + 1], key)) {
 				i++;
 			}
 		}
@@ -209,8 +242,9 @@ inline void my_btree_node<T, Compare, min_degree>::insert(const value_type& key)
 }
 
 template<class T, class Compare, int min_degree>
-inline void my_btree_node<T, Compare, min_degree>::splitChild(int i, my_btree_node* node)
+inline void my_btree_node<T, Compare, min_degree>::splitChild(int child_index)
 {
+	my_btree_node* node = _children[child_index];
 	my_btree_node<T, Compare, min_degree>* new_node = new my_btree_node<T, Compare, min_degree> (node->leaf());
 	new_node->_key_count = min_degree - 1;
 
@@ -225,16 +259,16 @@ inline void my_btree_node<T, Compare, min_degree>::splitChild(int i, my_btree_no
 	}
 	node->_key_count = min_degree - 1;
 
-	for (int j = keyCount(); j >= i+1; j--) {
+	for (int j = keyCount(); j >= child_index+1; j--) {
 		placeChild(_children[j], j + 1);
 	}
 
-	placeChild(new_node, i + 1);
+	placeChild(new_node, child_index + 1);
 	
-	for (int j = keyCount() - 1; j >= i; j--) {
+	for (int j = keyCount() - 1; j >= child_index; j--) {
 		_keys[j + 1] = _keys[j];
 	}
-	_keys[i] = node->_keys[min_degree - 1];
+	_keys[child_index] = node->_keys[min_degree - 1];
 	_key_count++;
 }
 
@@ -242,7 +276,7 @@ template<class T, class Compare, int min_degree>
 inline int my_btree_node<T, Compare, min_degree>::findKey(const value_type& key) const
 {
 	int idx = 0;
-	while (idx < keyCount() && _compare(_keys[idx], key)) {
+	while (idx < keyCount() && compare(_keys[idx], key)) {
 		idx++;
 	}
 	return idx;
@@ -287,17 +321,17 @@ inline void my_btree_node<T, Compare, min_degree>::removeFromLeaf(int idx)
 template<class T, class Compare, int min_degree>
 inline void my_btree_node<T, Compare, min_degree>::removeFromNonLeaf(int idx)
 {
-	T key = _keys[idx];
+	value_type key = _keys[idx];
 	if (_children[idx]->keyCount() >= min_degree)
 	{
-		T pred = getPred(idx);
-		_keys[idx] = pred;
-		_children[idx]->remove(pred);
+		value_type prev = getPreviousKey(idx);
+		_keys[idx] = prev;
+		_children[idx]->remove(prev);
 	}
 	else if (_children[idx + 1]->keyCount() >= min_degree) {
-		T pred = getSucc(idx);
-		_keys[idx] = pred;
-		_children[idx+1]->remove(pred);
+		value_type next = getNextKey(idx);
+		_keys[idx] = next;
+		_children[idx + 1]->remove(next);
 	}
 	else {
 		merge(idx);
@@ -306,7 +340,7 @@ inline void my_btree_node<T, Compare, min_degree>::removeFromNonLeaf(int idx)
 }
 
 template<class T, class Compare, int min_degree>
-inline T my_btree_node<T, Compare, min_degree>::getPred(int idx)
+inline T my_btree_node<T, Compare, min_degree>::getPreviousKey(int idx)
 {
 	my_btree_node* curr = _children[idx];
 	while (!curr->leaf()) {
@@ -316,9 +350,9 @@ inline T my_btree_node<T, Compare, min_degree>::getPred(int idx)
 }
 
 template<class T, class Compare, int min_degree>
-inline T my_btree_node<T, Compare, min_degree>::getSucc(int idx)
+inline T my_btree_node<T, Compare, min_degree>::getNextKey(int idx)
 {
-	my_btree_node* curr = _children[idx+1];
+	my_btree_node* curr = _children[idx + 1];
 	while (!curr->leaf()) {
 		curr = curr->_children[0];
 	}
